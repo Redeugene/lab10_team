@@ -1,0 +1,67 @@
+
+from requests import get
+from bs4 import BeautifulSoup
+
+with open('proxies.txt') as file:
+    proxies = file.read().splitlines()
+
+
+with open('useragents.txt') as file:
+    useragents = file.read().splitlines()
+
+def parse_catalog(catalog: str, catalog_name: str, city = "Москва"):
+    catalog = catalog.replace("spb.","")
+    prod_link = "https://leroymerlin.ru/"
+
+    page = 1
+    flag = True
+    products = []
+
+    while (flag):
+        # print('page: ',page)
+        sapo_url = catalog + '?page=' + str(page)
+        # print(sapo_url)
+        r = get(sapo_url, headers={'User-Agent': choice(useragents)}, proxies={'http': 'http://' + choice(proxies)})
+        page_html = BeautifulSoup(r.text, 'html.parser')
+
+        # sometimes page has these tags, but responses with 404 and it breaks the parser
+        try:
+            # get the list of containers with corresponding products in catalog page
+            product_containers = page_html.find_all('div', class_="phytpj4_plp largeCard")
+        except:
+            continue
+        # print(parse_catalog("https://spb.leroymerlin.ru/catalogue/pribory-ucheta-i-izmereniy/","Приборы учета и измерений")
+
+        if product_containers != []:
+            for count, container in enumerate(product_containers):
+                try:
+                    link = prod_link + container.find('a')['href']  # link
+
+                    if link == checker:
+                        flag = False
+                        break
+
+                    if count == 0:
+                        checker = link
+
+                    title = container.find('a')['aria-label']  # title
+
+                    article = container.find('span', class_='t3y6ha_plp sn92g85_plp p16wqyak_plp').text.replace("Арт. ",
+                                                                                                                "")  # article
+
+                    price_row = container.find('p', class_='t3y6ha_plp xc1n09g_plp p1q9hgmc_plp').text  # price
+                    price = ""
+                    for s in price_row:
+                        if s.isdigit():
+                            price += s
+
+                    unit = container.find('p', class_='t3y6ha_plp x9a98_plp pb3lgg7_plp').text.split('/')[1][:-1]  # unit
+
+                    category = parse_page(link)  # category
+                    
+                    products.append([title,category,price,link,catalog_name,article,unit])
+                except:
+                    print(link + '---')
+                    pass
+		print(products)
+
